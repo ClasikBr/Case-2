@@ -43,19 +43,20 @@ def Luhn_algorithm(card_num:str)-> bool:
 
 def find_secrets(text: str) -> list[str]:
     """
-    Ищет API-ключи, токены, пароли.
-
-    Args:
-        text (str): Входной текст.
-
-    Returns:
-        list[str]: Список найденных секретов.
+    Searches for API keys, tokens, passwords.
     """
-    secrets = []
-
-    # TODO: реализовать поиск секретов (регулярки)
-
-    return secrets
+    API = []
+    PASSWORD = []
+    pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
+    pattern_public_API = r'\bpk_(?:test|live)_[A-Za-z\d]+\b'
+    pattern_password = r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])[A-Za-z\d!@#$%&*]{8,}'
+    API.extend(re.findall(pattern_secret_API, text))
+    API.extend(re.findall(pattern_public_API, text))
+    PASSWORD.extend(re.findall(pattern_password, text))
+    return {
+        "API": API,
+        "Passwords": PASSWORD,
+    }
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
@@ -169,15 +170,7 @@ def normalize_and_validate(text: str) -> dict[str, Any]:
 
 
 def generate_comprehensive_report(text: str) -> dict[str, Any]:
-    """
-    Генерирует полный отчёт о расследовании.
-
-    Args:
-        text (str): Входной текст (единый файл).
-
-    Returns:
-        dict[str, Any]: Структурированный отчёт.
-    """
+    """Генерирует полный отчёт о расследовании"""
     return {
         "financial_data": find_and_validate_credit_cards(text),
         "secrets": find_secrets(text),
@@ -189,12 +182,7 @@ def generate_comprehensive_report(text: str) -> dict[str, Any]:
 
 
 def print_report(report: dict[str, Any]) -> None:
-    """
-    Красиво выводит отчёт в консоль.
-
-    Args:
-        report (dict[str, Any]): Сформированный отчёт.
-    """
+    """Красиво выводит отчёт в консоль"""
     print("=" * 50)
     print("ОТЧЁТ ОПЕРАЦИИ 'DATA SHIELD'")
     print("=" * 50)
@@ -214,6 +202,9 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     valid.update(financial.get("valid", []))
     invalid.update(financial.get("invalid", []))
 
+    secrets = report.get("secrets", {})
+    valid.update(secrets.get("API", []))
+    valid.update(secrets.get("Passwords", []))
     with open(filename, "w", encoding="utf-8") as file:
         file.write("=== VALID ARTIFACTS ===\n")
         for item in sorted(valid):
