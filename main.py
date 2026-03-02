@@ -170,7 +170,7 @@ def normalize_and_validate(text: str) -> dict[str, Any]:
 
 
 def generate_comprehensive_report(text: str) -> dict[str, Any]:
-    """Генерирует полный отчёт о расследовании"""
+    """Generates a full investigation report"""
     return {
         "financial_data": find_and_validate_credit_cards(text),
         "secrets": find_secrets(text),
@@ -182,7 +182,7 @@ def generate_comprehensive_report(text: str) -> dict[str, Any]:
 
 
 def print_report(report: dict[str, Any]) -> None:
-    """Красиво выводит отчёт в консоль"""
+    """It outputs a report to the console."""
     print("=" * 50)
     print("ОТЧЁТ ОПЕРАЦИИ 'DATA SHIELD'")
     print("=" * 50)
