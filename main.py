@@ -44,15 +44,26 @@ def Luhn_algorithm(card_num:str)-> bool:
 def find_secrets(text: str) -> list[str]:
     """
     Searches for API keys, tokens, passwords.
+    Filters out passwords containing forbidden substrings (seasons, names, base combinations).
     """
     API = []
     PASSWORD = []
     pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
     pattern_public_API = r'\bpk_(?:test|live)_[A-Za-z\d]+\b'
-    pattern_password = r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])[A-Za-z\d!@#$%&*]{8,}'
     API.extend(re.findall(pattern_secret_API, text))
     API.extend(re.findall(pattern_public_API, text))
-    PASSWORD.extend(re.findall(pattern_password, text))
+    pattern_password = r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])[A-Za-z\d!@#$%&_*]{8,}'
+    forbidden_substrings = [
+        "Kirill", "Platon", "Artemiy", "Zhamso",
+        "winter", "spring", "summer", "autumn",
+        "qwerty", "q1w2e3r4", "qwerty123", "123456",
+        "qazwsx", "password", "admin",
+    ]
+    potential_passwords = re.findall(pattern_password, text)
+    for pwd in potential_passwords:
+        pwd_lower = pwd.lower()
+        if not any(forbidden in pwd_lower for forbidden in forbidden_substrings):
+            PASSWORD.append(pwd)
     return {
         "API": API,
         "Passwords": PASSWORD,
@@ -199,12 +210,10 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     invalid: set[str] = set()
 
     financial = report.get("financial_data", {})
-    valid.update(financial.get("valid", []))
+    secrets = report.get("secrets", {})
+    valid.update(financial.get("valid", []), secrets.get("API", []), secrets.get("Passwords", []))
     invalid.update(financial.get("invalid", []))
 
-    secrets = report.get("secrets", {})
-    valid.update(secrets.get("API", []))
-    valid.update(secrets.get("Passwords", []))
     with open(filename, "w", encoding="utf-8") as file:
         file.write("=== VALID ARTIFACTS ===\n")
         for item in sorted(valid):
