@@ -41,21 +41,42 @@ def Luhn_algorithm(card_num:str)-> bool:
     return check_sm % 10 ==0
 
 
-def find_secrets(text: str) -> list[str]:
-    """
-    Ищет API-ключи, токены, пароли.
+def find_secrets(text: str) -> dict:
+    API = []
+    PASSWORD = []
+    pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
+    pattern_public_API = r'\bpk_(?:test|live)_[A-Za-z\d]+\b'
+    API.extend(re.findall(pattern_secret_API, text))
+    API.extend(re.findall(pattern_public_API, text))
 
-    Args:
-        text (str): Входной текст.
+    allowed_pattern = r'[A-Za-z\d!@#$%&*_]{8,}'
+    candidates = re.findall(allowed_pattern, text)
 
-    Returns:
-        list[str]: Список найденных секретов.
-    """
-    secrets = []
 
-    # TODO: реализовать поиск секретов (регулярки)
+    def has_required_classes(pwd):
+        return (re.search(r'[a-z]', pwd) and
+                re.search(r'[A-Z]', pwd) and
+                re.search(r'\d', pwd) and
+                re.search(r'[!@#$%&*]', pwd))
 
-    return secrets
+    forbidden_substrings = [
+        "kirill", "platon", "artemiy", "zhamso",
+        "winter", "spring", "summer", "autumn", "fall",
+        "qwerty", "q1w2e3r4", "qwerty123", "123456",
+        "qazwsx", "password", "admin"
+    ]
+
+    for pwd in candidates:
+        if not has_required_classes(pwd):
+            continue
+        lower_pwd = pwd.lower()
+        if any(forbidden in lower_pwd for forbidden in forbidden_substrings):
+            continue
+        PASSWORD.append(pwd)
+
+    API = list(set(API))
+    PASSWORD = list(set(PASSWORD))
+    return {"API": API, "Passwords": PASSWORD}
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
@@ -162,7 +183,7 @@ def normalize_and_validate(text: str) -> dict[str, Any]:
 
 
 def generate_comprehensive_report(text: str) -> dict[str, Any]:
-    """Generates a full investigation report."""
+    """Generates a full investigation report"""
     return {
         "financial_data": find_and_validate_credit_cards(text),
         "secrets": find_secrets(text),
@@ -174,7 +195,7 @@ def generate_comprehensive_report(text: str) -> dict[str, Any]:
 
 
 def print_report(report: dict[str, Any]) -> None:
-    """Displays a beautiful report in the console"""
+    """It outputs a report to the console."""
     print("=" * 50)
     print("ОТЧЁТ ОПЕРАЦИИ 'DATA SHIELD'")
     print("=" * 50)
@@ -191,9 +212,10 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     invalid: set[str] = set()
 
     financial = report.get("financial_data", {})
+    secrets = report.get("secrets", {})
     info = report.get("system_info", {})
 
-    valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []), info.get('emails', []))
+    valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []), info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", [])))
     invalid.update(financial.get("invalid", []))
 
 
@@ -220,3 +242,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

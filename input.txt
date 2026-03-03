@@ -1,7 +1,6 @@
 Номера карт: 4532-4512-8795-2109, 4111 1111 1111 1111, 1234567899990000, 1111 1111 1111 1111
-API: sk_live_51Mn8cB7xY9zA1b2C3d4E5f6G7h8I9j0K
-Пароль: Summer2024!
-files: /home/user/docs/file.txt, C:\Documents\Report.docx
+API: sK_live_51Mn8cB7xY9zA1b2C3d4E5f6G7h8I9j0K, pk_test_ofgofnbofd85gmnrg757gf9e4, sk_test_N56sk45agg61KHy6046, Sk_Live_
+Пароль: Summer2024!, like_This_123!, !CristianoGoat7, MONTENEGRO+382, KirillHi!1, HDKBnv_12, WaBaLaBa&1
 IP: 203.0.113.5, 192.168.1.100
 Email: alice.wonderland@securecorp.com
 Base64: VGhpcyBpcyBhIHNlY3JldCBtZXNzYWdlIQ==
