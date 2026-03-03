@@ -5,7 +5,9 @@ from typing import Any
 
 
 def find_and_validate_credit_cards(text: str) -> dict[str, list[str]]:
-    """Finds bank card numbers and checks them using the Luna algorithm"""
+    """
+    Finds bank card numbers and checks them using the Luna algorithm.
+    """
     valid_cards = []
     invalid_cards = []
     pattern=r"(?:\d[ -]?){16}"
@@ -26,7 +28,9 @@ def find_and_validate_credit_cards(text: str) -> dict[str, list[str]]:
     }
 
 def Luhn_algorithm(card_num:str)-> bool:
-    '''Checks the card number using the Luna algorithm'''
+    """
+    Checks the card number using the Luna algorithm.
+    """
     digits=[int(d) for d in card_num]
     check_sm = 0
 
@@ -42,6 +46,9 @@ def Luhn_algorithm(card_num:str)-> bool:
 
 
 def find_secrets(text: str) -> dict:
+    """
+    Searches for API and passwords.
+    """
     API = []
     PASSWORD = []
     pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
@@ -80,7 +87,9 @@ def find_secrets(text: str) -> dict:
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
-    """Searches for API keys, tokens, passwords"""
+    """
+    Searches for API keys, tokens, passwords.
+    """
     ips_pattern = r"\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\b"
     windows_file_pattern = r"\b[A-Za-z]:\\(?:[^\\/:*?\"<>|\r\n]+\\)*[^\\/:*?\"<>|\r\n]+\b"
     linux_file_pattern = r"\b/(?:[^/\s]+/)*[^/\s]+\b"
@@ -183,7 +192,9 @@ def normalize_and_validate(text: str) -> dict[str, Any]:
 
 
 def generate_comprehensive_report(text: str) -> dict[str, Any]:
-    """Generates a full investigation report"""
+    """
+    Generates a full investigation report.
+    """
     return {
         "financial_data": find_and_validate_credit_cards(text),
         "secrets": find_secrets(text),
@@ -195,7 +206,9 @@ def generate_comprehensive_report(text: str) -> dict[str, Any]:
 
 
 def print_report(report: dict[str, Any]) -> None:
-    """It outputs a report to the console."""
+    """
+    It outputs a report to the console.
+    """
     print("=" * 50)
     print("ОТЧЁТ ОПЕРАЦИИ 'DATA SHIELD'")
     print("=" * 50)
@@ -207,7 +220,9 @@ def print_report(report: dict[str, Any]) -> None:
 
 
 def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") -> None:
-    """Saves all unique artifacts to a file"""
+    """
+    Saves all unique artifacts to a file.
+    """
     valid: set[str] = set()
     invalid: set[str] = set()
 
@@ -215,7 +230,8 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     secrets = report.get("secrets", {})
     info = report.get("system_info", {})
 
-    valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []), info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", [])))
+    valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []),
+                 info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", []))
     invalid.update(financial.get("invalid", []))
 
 
@@ -230,7 +246,9 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
 
 
 def main() -> None:
-    """beginning of the program"""
+    """
+    Beginning of the program.
+    """
 
     with open("input.txt", "r", encoding="utf-8") as file:
         text = file.read()
