@@ -104,31 +104,77 @@ def decode_messages(text: str) -> dict[str, list[str]]:
 
 
 def analyze_logs(log_text: str) -> dict[str, list[str]]:
-    """
-    Analyzes web server logs for attacks.
+    """Analyzes web server logs for attacks."""
+    sql_patterns = [
+        r"'\s+OR\s+'", r"OR\s+1\s*=\s*1", r"UNION\s+SELECT",
+        r"--", r";", r"'\s+AND\s+'", r"'\s*="
+    ]
 
-    Args:
-        log_text (str): Текст логов.
+    xss_patterns = [
+        r"<script", r"alert\s*\(", r"onerror\s*=",
+        r"onload\s*=", r"javascript:", r"<[^>]+on\w+\s*="
+    ]
 
-    Returns:
-        dict[str, list[str]]: Словарь:
-            - "sql_injections": найденные SQL-инъекции
-            - "xss_attempts": попытки XSS
-            - "suspicious_user_agents": подозрительные User-Agent
-            - "failed_logins": неудачные попытки входа
-    """
+    suspicious_agents = [
+        "EvilBot", "sqlmap", "nikto", "zgrab", "masscan",
+        "nmap", "nessus", "openvas", "python-requests", "go-http-client"
+    ]
+
+    ip_pattern = r'\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\b'
+
     sql_injections = []
     xss_attempts = []
-    suspicious_agents = []
+    suspicious_user_agents = []
     failed_logins = []
 
-    # TODO: реализовать анализ логов
+    lines = log_text.strip().split('\n')
+    for line in lines:
+        if not line.strip():
+            continue
+        line = line.strip()
+
+        ip_matches = list(re.finditer(ip_pattern, line))
+        if not ip_matches:
+            continue
+
+        for i, ip_match in enumerate(ip_matches):
+            start = ip_match.start()
+            end = ip_matches[i + 1].start() if i + 1 < len(ip_matches) else len(line)
+            record = line[start:end].strip()
+            if record.endswith(','):
+                record = record[:-1]
+
+            ip = ip_match.group(0)
+
+            request_match = re.search(r'"[^"]*"', record)
+            request = request_match.group(0) if request_match else ""
+
+            is_sql = False
+            for pat in sql_patterns:
+                if re.search(pat, record, re.IGNORECASE):
+                    sql_injections.append(f"{ip} - {request}")
+                    is_sql = True
+                    break
+
+            if not is_sql:
+                for pat in xss_patterns:
+                    if re.search(pat, record, re.IGNORECASE):
+                        xss_attempts.append(f"{ip} - {request}")
+                        break
+
+            for agent in suspicious_agents:
+                if agent.lower() in record.lower():
+                    suspicious_user_agents.append(f"{ip} - {agent}")
+                    break
+
+            if re.search(r'\s(401|403)\s', record):
+                failed_logins.append(f"{ip} - {request}")
 
     return {
-        "sql_injections": sql_injections,
-        "xss_attempts": xss_attempts,
-        "suspicious_user_agents": suspicious_agents,
-        "failed_logins": failed_logins
+        'sql_injections': sql_injections,
+        'xss_attempts': xss_attempts,
+        'suspicious_user_agents': suspicious_user_agents,
+        'failed_logins': failed_logins
     }
 
 
