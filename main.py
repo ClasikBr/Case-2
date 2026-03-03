@@ -282,7 +282,6 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
                  logs.get('sql_injections', []), logs.get('xss_attempts', []),
                  logs.get('suspicious_user_agents', []), logs.get('failed_logins', [])
                  )
-    invalid.update(financial.get("invalid", []))
 
 
     with open(filename, "w", encoding="utf-8") as file:
@@ -290,53 +289,28 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
         for item in sorted(valid):
             file.write(f"{item}\n")
 
-        file.write("\n=== INVALID / NOISY ARTIFACTS ===\n")
-        for item in sorted(invalid):
-            file.write(f"{item}\n")
-
 
 def count_artifacts(filepath: str) -> None:
     """
     Count valid and invalid artifacts and print totals.
     """
-
     with open(filepath, "r", encoding="utf-8") as file:
-        text = file.read()
+        lines = file.readlines()
 
     valid_header = "=== VALID ARTIFACTS ==="
-    invalid_header = "=== INVALID / NOISY ARTIFACTS ==="
-
-    lines = text.splitlines()
-
-    in_valid = False
-    in_invalid = False
-
     valid_count = 0
-    invalid_count = 0
+    start_counting = False
 
     for line in lines:
         stripped = line.strip()
-
         if stripped == valid_header:
-            in_valid = True
-            in_invalid = False
+            start_counting = True
             continue
-
-        if stripped == invalid_header:
-            in_valid = False
-            in_invalid = True
-            continue
-
-        if in_valid and stripped:
+        if start_counting and stripped:
             valid_count += 1
-
-        if in_invalid and stripped:
-            invalid_count += 1
-
     print("\nUNIQUE_ARTIFACTS_COUNT:")
     print("-" * 30)
     print(f"Valid artifacts:   {valid_count}")
-    print(f"Invalid artifacts: {invalid_count}")
 
 
 def main() -> None:
