@@ -80,23 +80,16 @@ def find_secrets(text: str) -> dict:
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
-    """
-    Ищет системную информацию: IP-адреса, email, пути к файлам.
+    """Searches for API keys, tokens, passwords"""
+    ips_pattern = r"\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\b"
+    windows_file_pattern = r"\b[A-Za-z]:\\(?:[^\\/:*?\"<>|\r\n]+\\)*[^\\/:*?\"<>|\r\n]+\b"
+    linux_file_pattern = r"\b/(?:[^/\s]+/)*[^/\s]+\b"
+    email_patter = r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b"
 
-    Args:
-        text (str): Входной текст.
-
-    Returns:
-        dict[str, list[str]]: Словарь с ключами:
-            - "ips": список IP-адресов
-            - "files": список путей к файлам
-            - "emails": список email-адресов
-    """
-    ips = []
-    files = []
-    emails = []
-
-    # TODO: реализовать поиск IP, email, файлов
+    ips = re.findall(ips_pattern, text)
+    files = re.findall(windows_file_pattern, text)
+    files.extend(re.findall(linux_file_pattern, text))
+    emails = re.findall(email_patter, text)
 
     return {
         "ips": ips,
@@ -133,7 +126,7 @@ def decode_messages(text: str) -> dict[str, list[str]]:
 
 def analyze_logs(log_text: str) -> dict[str, list[str]]:
     """
-    Анализирует логи веб-сервера на предмет атак.
+    Analyzes web server logs for attacks.
 
     Args:
         log_text (str): Текст логов.
@@ -162,7 +155,7 @@ def analyze_logs(log_text: str) -> dict[str, list[str]]:
 
 def normalize_and_validate(text: str) -> dict[str, Any]:
     """
-    Нормализует телефоны, даты, ИНН, карты.
+    Normalizes telephone numbers, dates, tax identification numbers, and cards.
 
     Args:
         text (str): Входной текст.
@@ -220,8 +213,11 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
 
     financial = report.get("financial_data", {})
     secrets = report.get("secrets", {})
-    valid.update(financial.get("valid", []), secrets.get("API", []), secrets.get("Passwords", []))
+    info = report.get("system_info", {})
+
+    valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []), info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", [])))
     invalid.update(financial.get("invalid", []))
+
 
     with open(filename, "w", encoding="utf-8") as file:
         file.write("=== VALID ARTIFACTS ===\n")
