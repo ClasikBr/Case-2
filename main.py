@@ -88,7 +88,7 @@ def find_secrets(text: str) -> dict:
 
 def find_system_info(text: str) -> dict[str, list[str]]:
     """
-    Searches for API keys, tokens, passwords.
+    Searches for ips, files, emails.
     """
     ips_pattern = r"\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\b"
     windows_file_pattern = r"\b[A-Za-z]:\\(?:[^\\/:*?\"<>|\r\n]+\\)*[^\\/:*?\"<>|\r\n]+\b"
@@ -275,9 +275,13 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     financial = report.get("financial_data", {})
     secrets = report.get("secrets", {})
     info = report.get("system_info", {})
+    logs = report.get("security_threats", {})
 
     valid.update(financial.get("valid", []), info.get('ips', []), info.get('files', []),
-                 info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", []))
+                 info.get('emails', []), secrets.get("API", []), secrets.get("Passwords", []),
+                 logs.get('sql_injections', []), logs.get('xss_attempts', []),
+                 logs.get('suspicious_user_agents', []), logs.get('failed_logins', [])
+                 )
     invalid.update(financial.get("invalid", []))
 
 
