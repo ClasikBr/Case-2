@@ -41,33 +41,42 @@ def Luhn_algorithm(card_num:str)-> bool:
     return check_sm % 10 ==0
 
 
-def find_secrets(text: str) -> list[str]:
-    """
-    Searches for API keys, tokens, passwords.
-    Filters out passwords containing forbidden substrings (seasons, names, base combinations).
-    """
+def find_secrets(text: str) -> dict:
     API = []
     PASSWORD = []
     pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
     pattern_public_API = r'\bpk_(?:test|live)_[A-Za-z\d]+\b'
     API.extend(re.findall(pattern_secret_API, text))
     API.extend(re.findall(pattern_public_API, text))
-    pattern_password = r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])[A-Za-z\d!@#$%&_*]{8,}'
+
+    allowed_pattern = r'[A-Za-z\d!@#$%&*_]{8,}'
+    candidates = re.findall(allowed_pattern, text)
+
+
+    def has_required_classes(pwd):
+        return (re.search(r'[a-z]', pwd) and
+                re.search(r'[A-Z]', pwd) and
+                re.search(r'\d', pwd) and
+                re.search(r'[!@#$%&*]', pwd))
+
     forbidden_substrings = [
-        "Kirill", "Platon", "Artemiy", "Zhamso",
-        "winter", "spring", "summer", "autumn",
+        "kirill", "platon", "artemiy", "zhamso",
+        "winter", "spring", "summer", "autumn", "fall",
         "qwerty", "q1w2e3r4", "qwerty123", "123456",
-        "qazwsx", "password", "admin",
+        "qazwsx", "password", "admin"
     ]
-    potential_passwords = re.findall(pattern_password, text)
-    for pwd in potential_passwords:
-        pwd_lower = pwd.lower()
-        if not any(forbidden in pwd_lower for forbidden in forbidden_substrings):
-            PASSWORD.append(pwd)
-    return {
-        "API": API,
-        "Passwords": PASSWORD,
-    }
+
+    for pwd in candidates:
+        if not has_required_classes(pwd):
+            continue
+        lower_pwd = pwd.lower()
+        if any(forbidden in lower_pwd for forbidden in forbidden_substrings):
+            continue
+        PASSWORD.append(pwd)
+
+    API = list(set(API))
+    PASSWORD = list(set(PASSWORD))
+    return {"API": API, "Passwords": PASSWORD}
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
@@ -237,3 +246,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
