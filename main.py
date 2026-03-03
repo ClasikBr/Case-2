@@ -41,22 +41,42 @@ def Luhn_algorithm(card_num:str)-> bool:
     return check_sm % 10 ==0
 
 
-def find_secrets(text: str) -> list[str]:
-    """
-    Searches for API keys, tokens, passwords.
-    """
+def find_secrets(text: str) -> dict:
     API = []
     PASSWORD = []
     pattern_secret_API = r'\bsk_(?:test|live)_[A-Za-z\d]+\b'
     pattern_public_API = r'\bpk_(?:test|live)_[A-Za-z\d]+\b'
-    pattern_password = r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%&*])[A-Za-z\d!@#$%&*]{8,}'
     API.extend(re.findall(pattern_secret_API, text))
     API.extend(re.findall(pattern_public_API, text))
-    PASSWORD.extend(re.findall(pattern_password, text))
-    return {
-        "API": API,
-        "Passwords": PASSWORD,
-    }
+
+    allowed_pattern = r'[A-Za-z\d!@#$%&*_]{8,}'
+    candidates = re.findall(allowed_pattern, text)
+
+
+    def has_required_classes(pwd):
+        return (re.search(r'[a-z]', pwd) and
+                re.search(r'[A-Z]', pwd) and
+                re.search(r'\d', pwd) and
+                re.search(r'[!@#$%&*]', pwd))
+
+    forbidden_substrings = [
+        "kirill", "platon", "artemiy", "zhamso",
+        "winter", "spring", "summer", "autumn", "fall",
+        "qwerty", "q1w2e3r4", "qwerty123", "123456",
+        "qazwsx", "password", "admin"
+    ]
+
+    for pwd in candidates:
+        if not has_required_classes(pwd):
+            continue
+        lower_pwd = pwd.lower()
+        if any(forbidden in lower_pwd for forbidden in forbidden_substrings):
+            continue
+        PASSWORD.append(pwd)
+
+    API = list(set(API))
+    PASSWORD = list(set(PASSWORD))
+    return {"API": API, "Passwords": PASSWORD}
 
 
 def find_system_info(text: str) -> dict[str, list[str]]:
@@ -199,12 +219,10 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     invalid: set[str] = set()
 
     financial = report.get("financial_data", {})
-    valid.update(financial.get("valid", []))
+    secrets = report.get("secrets", {})
+    valid.update(financial.get("valid", []), secrets.get("API", []), secrets.get("Passwords", []))
     invalid.update(financial.get("invalid", []))
 
-    secrets = report.get("secrets", {})
-    valid.update(secrets.get("API", []))
-    valid.update(secrets.get("Passwords", []))
     with open(filename, "w", encoding="utf-8") as file:
         file.write("=== VALID ARTIFACTS ===\n")
         for item in sorted(valid):
