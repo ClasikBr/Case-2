@@ -295,6 +295,50 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
             file.write(f"{item}\n")
 
 
+def count_artifacts(filepath: str) -> None:
+    """
+    Count valid and invalid artifacts and print totals.
+    """
+
+    with open(filepath, "r", encoding="utf-8") as file:
+        text = file.read()
+
+    valid_header = "=== VALID ARTIFACTS ==="
+    invalid_header = "=== INVALID / NOISY ARTIFACTS ==="
+
+    lines = text.splitlines()
+
+    in_valid = False
+    in_invalid = False
+
+    valid_count = 0
+    invalid_count = 0
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped == valid_header:
+            in_valid = True
+            in_invalid = False
+            continue
+
+        if stripped == invalid_header:
+            in_valid = False
+            in_invalid = True
+            continue
+
+        if in_valid and stripped:
+            valid_count += 1
+
+        if in_invalid and stripped:
+            invalid_count += 1
+
+    print("\nUNIQUE_ARTIFACTS_COUNT:")
+    print("-" * 30)
+    print(f"Valid artifacts:   {valid_count}")
+    print(f"Invalid artifacts: {invalid_count}")
+
+
 def main() -> None:
     """
     Beginning of the program.
@@ -306,6 +350,7 @@ def main() -> None:
     report = generate_comprehensive_report(text)
     print_report(report)
     save_artifacts(report)
+    count_artifacts('all_artifacts.txt')
 
 
 if __name__ == "__main__":
