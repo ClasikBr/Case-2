@@ -1,0 +1,17 @@
+=== VALID ARTIFACTS ===
+!CristianoGoat7
+/1.0
+/user/docs/file.txt
+10.0.0.50
+10.0.0.50 - "GET /products?id=1' OR '1'='1"
+1234567899990000
+192.168.1.100
+192.168.1.100 - "GET /search?q=<script>alert('xss')</script>"
+203.0.113.5
+203.0.113.5 - "GET /admin"
+203.0.113.5 - EvilBot
+4111111111111111
+4532451287952109
+C:\Documents\Report.docx
+WaBaLaBa&1
+alice.wonderland@securecorp.com

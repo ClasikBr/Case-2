@@ -317,7 +317,7 @@ def analyze_logs(log_text: str) -> dict[str, list[str]]:
 
 def normalize_and_validate(text: str) -> dict[str, Any]:
     """
-    Normalizes telephone numbers, dates, tax identification numbers, and cards.
+    Normalizes telephone numbers, dates, tax identification numbers, and cards
     """
     phones = {"valid": [], "invalid": []}
     dates = {"normalized": [], "invalid": []}
@@ -527,3 +527,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
