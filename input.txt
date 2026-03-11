@@ -4,6 +4,8 @@ API: sK_live_51Mn8cB7xY9zA1b2C3d4E5f6G7h8I9j0K, pk_test_ofgofnbofd85gmnrg757gf9e
 IP: 203.0.113.5, 192.168.1.100
 Email: alice.wonderland@securecorp.com
 Base64: VGhpcyBpcyBhIHNlY3JldCBtZXNzYWdlIQ==
+hex: 0x4D7950617373
+ROT13: Gur cnffjbeq vf Summer2024!
 Логи: 10.0.0.50 - "GET /products?id=1' OR '1'='1", 203.0.113.5 - "GET /admin" 401 "EvilBot/1.0", 192.168.1.100 - "GET /search?q=<script>alert('xss')</script>"
 Телефон: 8-912-345-67-89
 Дата: 15.02.2024

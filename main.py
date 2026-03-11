@@ -2,6 +2,7 @@ import re
 import base64
 import codecs
 from typing import Any
+from datetime import datetime
 
 
 def find_and_validate_credit_cards(text: str) -> dict[str, list[str]]:
@@ -107,24 +108,130 @@ def find_system_info(text: str) -> dict[str, list[str]]:
     }
 
 
+def decode_base64(text):
+    try:
+        text = text.strip()
+        text = text + '=' * (-len(text) % 4)
+        decoded = base64.b64decode(text).decode('utf-8', errors='ignore')
+        return decoded
+    except:
+        return None
+
+def decode_hex(text):
+
+    """Декодирует Hex строку"""
+
+    try:
+        text = text.lower().replace('0x', '').strip()
+        text = re.sub(r'[^0-9a-f]', '', text)
+        if text and len(text) % 2 == 0:
+            decoded = bytes.fromhex(text).decode('utf-8', errors='ignore')
+            return decoded
+    except:
+        pass
+    return None
+
+def decode_rot13(text):
+
+    """Декодирует ROT13 строку"""
+
+    try:
+        decoded = codecs.decode(text, 'rot_13')
+        return decoded
+    except:
+        return None
+
+
 def decode_messages(text: str) -> dict[str, list[str]]:
-    """
-    Находит и расшифровывает сообщения в Base64, Hex, ROT13.
 
-    Args:
-        text (str): Входной текст.
-
-    Returns:
-        dict[str, list[str]]: Словарь:
-            - "base64": список расшифрованных Base64 сообщений
-            - "hex": список расшифрованных Hex сообщений
-            - "rot13": список расшифрованных ROT13 сообщений
-    """
     decoded_base64 = []
     decoded_hex = []
     decoded_rot13 = []
 
-    # TODO: реализовать поиск и декодирование
+    common_passwords = [
+        "password", "pass123", "123456", "qwerty", "admin", "admin123",
+        "welcome", "login", "user123", "root", "toor", "12345678",
+        "123456789", "12345", "1234", "1234567890", "password123",
+        "summer2024", "summer2023", "summer2025", "summer2024!",
+        "winter2024", "spring2024", "autumn2024", "fall2024",
+        "qwerty123", "qwerty123!", "q1w2e3r4", "q1w2e3r4t5",
+        "passw0rd", "p@ssw0rd", "p455w0rd", "password1", "Password1",
+        "Pass1234", "pass1234", "admin123!", "Admin123",
+        "Summer2024!", "Summer2023!", "Summer2025!", "ROT13"
+    ]
+
+    base64_pattern = r'[A-Za-z0-9+/]{11,}+={0,2}'
+    base64_matches = re.findall(base64_pattern, text)
+
+    for match in base64_matches:
+        common_words = ['the', 'and', 'is', 'in', 'to', 'of', 'for', 'with', 'this', 'that', 'password', 'secret']
+        if len(match) >= 8:
+            decoded = decode_base64(match)
+            if decoded and all(32 <= ord(c) <= 126 for c in decoded[:50]) and \
+                    any(word in decoded.lower() for word in common_words):
+                if decoded not in decoded_base64:
+                    decoded_base64.append(decoded)
+
+    hex_patterns = [
+        r'0x[0-9a-fA-F]+',
+        r'\b[0-9a-fA-F]{8,}\b'
+    ]
+
+    for pattern in hex_patterns:
+        hex_matches = re.findall(pattern, text)
+        for match in hex_matches:
+            decoded = decode_hex(match)
+            if decoded and decoded.strip() and all(32 <= ord(c) <= 126 for c in decoded[:50]):
+                if decoded not in decoded_hex:
+                    decoded_hex.append(decoded)
+
+    def decode_rot13_with_passwords(encoded_text):
+        """Декодирует ROT13, но сохраняет пароли в исходном виде"""
+        words = encoded_text.split()
+        decoded_words = []
+
+        for word in words:
+            is_password = False
+            word_clean = word.strip('.,!?;:')
+
+            for pwd in common_passwords:
+                if pwd.lower() == word_clean.lower() or pwd in word_clean:
+                    is_password = True
+                    break
+
+            if is_password:
+                decoded_words.append(word)
+            else:
+                decoded = decode_rot13(word)
+                if decoded:
+                    decoded_words.append(decoded)
+                else:
+                    decoded_words.append(word)
+
+        return ' '.join(decoded_words)
+
+    rot13_label_pattern = r'ROT13:\s*([A-Za-z0-9\s!@#$%&*_]+)'
+    labeled_matches = re.findall(rot13_label_pattern, text, re.IGNORECASE)
+
+    for match in labeled_matches:
+        candidate = match.strip()
+        decoded = decode_rot13_with_passwords(candidate)
+        if decoded and decoded not in decoded_rot13:
+            decoded_rot13.append(decoded)
+
+    sentences = re.split(r'[.!?\n\r]+', text)
+
+    for sentence in sentences:
+        words = re.findall(r'[A-Za-z0-9!@#$%&*_]+', sentence)
+        if len(words) >= 2:
+            potential_rot13 = ' '.join(words)
+            if any(c.isalpha() for word in words for c in word):
+                decoded = decode_rot13_with_passwords(potential_rot13)
+                common_words = ['the', 'is', 'are', 'password', 'secret', 'key', 'access']
+                decoded_lower = decoded.lower()
+                if any(word in decoded_lower for word in common_words) and decoded != potential_rot13:
+                    if decoded not in decoded_rot13:
+                        decoded_rot13.append(decoded)
 
     return {
         "base64": decoded_base64,
@@ -210,31 +317,123 @@ def analyze_logs(log_text: str) -> dict[str, list[str]]:
 
 def normalize_and_validate(text: str) -> dict[str, Any]:
     """
-    Normalizes telephone numbers, dates, tax identification numbers, and cards.
-
-    Args:
-        text (str): Входной текст.
-
-    Returns:
-        dict[str, Any]: Словарь:
-            - "phones": {"valid": [], "invalid": []}
-            - "dates": {"normalized": [], "invalid": []}
-            - "inn": {"valid": [], "invalid": []}
-            - "cards": {"valid": [], "invalid": []}
+    Normalizes telephone numbers, dates, tax identification numbers, and cards
     """
     phones = {"valid": [], "invalid": []}
     dates = {"normalized": [], "invalid": []}
     inn = {"valid": [], "invalid": []}
     cards = {"valid": [], "invalid": []}
 
-    # TODO: реализовать нормализацию и валидацию
+    phone_patterns = [
+        r'\+7[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
+        r'8[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
+        r'\d{10}',
+        r'\d{11}'
+    ]
+
+    for pattern in phone_patterns:
+        matches = re.findall(pattern, text)
+        for phone in matches:
+            clean_phone = re.sub(r'[\s-]', '', phone)
+
+            if len(clean_phone) == 10 and clean_phone.isdigit():
+                normalized = f"+7{clean_phone}"
+                if normalized not in phones['valid'] and normalized not in phones['invalid']:
+                    phones['valid'].append(normalized)
+            elif len(clean_phone) == 11 and clean_phone.isdigit():
+                if clean_phone.startswith('8'):
+                    normalized = f"+7{clean_phone[1:]}"
+                elif clean_phone.startswith('7'):
+                    normalized = f"+{clean_phone}"
+                else:
+                    normalized = f"+7{clean_phone}"
+
+                if normalized not in phones['valid'] and normalized not in phones['invalid']:
+                    phones['valid'].append(normalized)
+            else:
+                if clean_phone not in phones['invalid']:
+                    phones['invalid'].append(clean_phone)
+
+    date_patterns = [
+        (r'\d{2}\.\d{2}\.\d{4}', '%d.%m.%Y'),  # DD.MM.YYYY
+        (r'\d{4}\.\d{2}\.\d{2}', '%Y.%m.%d'),  # YYYY.MM.DD
+        (r'\d{2}-\d{2}-\d{4}', '%d-%m-%Y'),  # DD-MM-YYYY
+        (r'\d{4}-\d{2}-\d{2}', '%Y-%m-%d'),  # YYYY-MM-DD
+        (r'\d{2}/\d{2}/\d{4}', '%d/%m/%Y'),  # DD/MM/YYYY
+        (r'\d{4}/\d{2}/\d{2}', '%Y/%m/%d'),  # YYYY/MM/DD
+        (r'\d{2}-[A-Za-z]{3}-\d{4}', '%d-%b-%Y')  # DD-MMM-YYYY
+    ]
+
+
+    for pattern, fmt in date_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        for date_str in matches:
+            try:
+                if '%b' in fmt:
+                    date_obj = datetime.strptime(date_str, fmt)
+                else:
+                    date_obj = datetime.strptime(date_str, fmt)
+
+                normalized = date_obj.strftime('%Y-%m-%d')
+
+                if 1900 <= date_obj.year <= 2100:
+                    if normalized not in dates['normalized'] and normalized not in dates['invalid']:
+                        dates['normalized'].append(normalized)
+                else:
+                    if date_str not in dates['invalid']:
+                        dates['invalid'].append(date_str)
+
+            except (ValueError, TypeError):
+                if date_str not in dates['invalid']:
+                    dates['invalid'].append(date_str)
+
+    cards_result = find_and_validate_credit_cards(text)
+    cards['valid'] = cards_result['valid']
+    cards['invalid'] = cards_result['invalid']
+
+    inn_pattern = r'\b\d{10}\b|\b\d{12}\b'
+    inn_matches = re.findall(inn_pattern, text)
+
+    for inn_num in inn_matches:
+        if validate_inn(inn_num):
+            if inn_num not in inn['valid'] and inn_num not in inn['invalid']:
+                inn['valid'].append(inn_num)
+        else:
+            if inn_num not in inn['invalid']:
+                inn['invalid'].append(inn_num)
+
+    cards_result = find_and_validate_credit_cards(text)
+    cards['valid'] = cards_result['valid']
+    cards['invalid'] = cards_result['invalid']
 
     return {
         "phones": phones,
         "dates": dates,
-        "inn": inn,
+        'inn': inn,
         "cards": cards
     }
+
+
+def validate_inn(inn: str) -> bool:
+
+    if not inn.isdigit():
+        return False
+
+    if len(inn) == 10:
+        weights = [2, 4, 10, 3, 5, 9, 4, 6, 8]
+        check_sum = sum(int(inn[i]) * weights[i] for i in range(9)) % 11 % 10
+        return check_sum == int(inn[9])
+
+    elif len(inn) == 12:
+        weights1 = [7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+        weights2 = [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8]
+
+        check_sum1 = sum(int(inn[i]) * weights1[i] for i in range(10)) % 11 % 10
+        check_sum2 = sum(int(inn[i]) * weights2[i] for i in range(11)) % 11 % 10
+
+        return check_sum1 == int(inn[10]) and check_sum2 == int(inn[11])
+
+    return False
 
 
 def generate_comprehensive_report(text: str) -> dict[str, Any]:
@@ -270,7 +469,6 @@ def save_artifacts(report: dict[str, Any], filename: str = "all_artifacts.txt") 
     Saves all unique artifacts to a file.
     """
     valid: set[str] = set()
-    invalid: set[str] = set()
 
     financial = report.get("financial_data", {})
     secrets = report.get("secrets", {})
