@@ -2,6 +2,7 @@ import re
 import base64
 import codecs
 from typing import Any
+from datetime import datetime
 
 
 def find_and_validate_credit_cards(text: str) -> dict[str, list[str]]:
@@ -363,7 +364,6 @@ def normalize_and_validate(text: str) -> dict[str, Any]:
         (r'\d{2}-[A-Za-z]{3}-\d{4}', '%d-%b-%Y')  # DD-MMM-YYYY
     ]
 
-    from datetime import datetime
 
     for pattern, fmt in date_patterns:
         matches = re.findall(pattern, text, re.IGNORECASE)
